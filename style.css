@@ -1,0 +1,15 @@
+h1 {
+  color: blue;
+}
+
+th, td {
+  border: dashed thick black;
+}
+
+td.important {
+  color: red;
+}
+
+td.notImportant {
+  color: blue;
+}
