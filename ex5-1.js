@@ -6,6 +6,9 @@ function start() {
   const canvas = document.getElementById("gl_canvas");
   gl = canvas.getContext("webgl");
 
+  gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
+
   const v_shader = createShader('vs');
   const f_shader = createShader('fs');
 
