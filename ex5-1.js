@@ -6,10 +6,6 @@ function start() {
   const canvas = document.getElementById("gl_canvas");
   gl = canvas.getContext("webgl");
 
-  gl.clearColor(0,0,0,1);
-  gl.clearDepth(1.0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
   const v_shader = createShader('vs');
   const f_shader = createShader('fs');
 
@@ -23,28 +19,32 @@ function start() {
   const vertexPosition = [
     0.0, 1.0, 0.0,
     1.0, 0.0, 0.0,
-    -1.0, 0.0, 0.0
+    -1.0, 0.0, 0.0,
+    0.0, -1.0,  0.0
   ];
 
   const vertexColor = [
-    1.0, 0.0, 0.0, 1,
+    1.0, 0.0, 0.0, 1.0,
     0.0, 1.0, 0.0, 1.0,
-    0.0, 0.0, 1.0, 1.0
+    0.0, 0.0, 1.0, 1.0,
+    1.0, 1.0, 1.0, 1.0
+  ];
+
+  const index = [
+    0,1,2,
+    1,2,3
   ];
 
   const positionVBO = createVBO(vertexPosition);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionVBO);
-  gl.enableVertexAttribArray(positionAttr);
-  gl.vertexAttribPointer(positionAttr, 3, gl.FLOAT, false, 0, 0);
-
   const colorVBO = createVBO(vertexColor);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorVBO);
-  gl.enableVertexAttribArray(colorAttr);
-  gl.vertexAttribPointer(colorAttr, 4, gl.FLOAT, false, 0, 0);
+  setAttribute([positionVBO, colorVBO], [positionAttr, colorAttr], [3,4]);
 
+  const ibo = createIBO(index);
 
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+
+  const uniLocation = gl.getUniformLocation(program, 'mvpMatrix');
 
   const m = new matIV();
 
@@ -54,30 +54,39 @@ function start() {
   let tmpMatrix = m.build();
   let mvpMatrix = m.build();
 
-  vMatrix = m.lookAt([0.0, 1.0, 3.0],[0, 0, 0], [0, 1, 0], vMatrix);
-  pMatrix = m.perspective(90, canvas.width / canvas.height, 0.1, 100, pMatrix);
+  m.lookAt([0.0, 1.0, 3.0],[0, 0, 0], [0, 1, 0], vMatrix);
+  m.perspective(90, canvas.width / canvas.height, 0.1, 100, pMatrix);
+  m.multiply(pMatrix, vMatrix, tmpMatrix);
 
-  // p -> v -> m
-  m.multiply(pMatrix, vMatrix , mvpMatrix);
-  m.multiply(mvpMatrix, mMatrix, mvpMatrix);
+  let count = 0;
 
-  const uniLocation = gl.getUniformLocation(program, 'mvpMatrix');
-  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  (function(){
+    // canvasを初期化
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // カウンタをインクリメントする
+    count++;
 
-  m.identity(mMatrix);
-  m.translate(mMatrix, [-1.5, 0.0, 0.0], mMatrix);
+    // カウンタを元にラジアンを算出
+    const rad = (count % 360) * Math.PI / 180;
 
-// モデル×ビュー×プロジェクション(二つ目のモデル)
-  m.multiply(mvpMatrix, mMatrix, mvpMatrix);
+    // モデル座標変換行列の生成(Y軸による回転)
+    m.identity(mMatrix);
+    m.rotate(mMatrix, rad, [0, 1, 0], mMatrix);
+    m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
 
-// uniformLocationへ座標変換行列を登録し描画する(二つ目のモデル)
-  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // インデックスを用いた描画命令
+    gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
 
+    // コンテキストの再描画
+    gl.flush();
 
-  gl.flush();
+    // ループのために再帰呼び出し
+    setTimeout(arguments.callee, 1000 / 30);
+  })();
 }
 
 
@@ -115,3 +124,21 @@ function createVBO(array) {
   return vbo;
 }
 
+// VBOをバインドし登録する関数
+function setAttribute(vboArr, attLocationArr, attSizeArr) {
+  for(let index in vboArr){
+    gl.bindBuffer(gl.ARRAY_BUFFER, vboArr[index]);
+    gl.enableVertexAttribArray(attLocationArr[index]);
+    gl.vertexAttribPointer(attLocationArr[index], attSizeArr[index], gl.FLOAT, false, 0, 0);
+  }
+}
+
+
+function createIBO(array) {
+  const ibo = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(array), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  return ibo;
+}
