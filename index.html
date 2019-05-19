@@ -1,15 +1,30 @@
-<!DOCTYPE html> <html>
+<html>
 <head>
   <meta charset="utf-8">
-
-  <title>ex5-1</title>
-
+  <title>WebGL</title>
   <script src="ex5-1.js"></script>
+  <script src="minMatrix.js"></script>
+
+  <script id="vs" type="x-shader/x-vertex">
+attribute vec3 position;
+uniform   mat4 mvpMatrix;
+
+void main(void){
+    gl_Position = mvpMatrix * vec4(position, 1.0);
+}
+
+  </script>
+
+  <script id="fs" type="x-shader/x-fragment">
+void main(void){
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+        </script>
 </head>
-<body>
-<h1>初めてのJavascript</h1>
 
+<body onload="start()">
+  <canvas id="gl_canvas" width="640" height="480">
 
-
-<script src="ex5-1.js"></script>
-</body> </html>
+  </canvas>
+</body>
+</html>
