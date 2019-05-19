@@ -8,13 +8,17 @@ function start() {
 
   gl.clearColor(0,0,0,1);
   gl.clearDepth(1.0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   const v_shader = createShader('vs');
   const f_shader = createShader('fs');
 
   const program = createProgram(v_shader, f_shader);
-  const attLocation = gl.getAttribLocation(program, 'position');
+  // v3
+  const positionAttr = gl.getAttribLocation(program, 'position');
+  // v4
+  const colorAttr = gl.getAttribLocation(program, 'color');
+
 
   const vertexPosition = [
     0.0, 1.0, 0.0,
@@ -22,19 +26,32 @@ function start() {
     -1.0, 0.0, 0.0
   ];
 
-  const vbo = createVBO(vertexPosition);
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  const vertexColor = [
+    1.0, 0.0, 0.0, 1,
+    0.0, 1.0, 0.0, 1.0,
+    0.0, 0.0, 1.0, 1.0
+  ];
 
-  // attribute属性を有効にする
-  gl.enableVertexAttribArray(attLocation);
-  // attribute属性を登録
-  gl.vertexAttribPointer(attLocation, 3, gl.FLOAT, false, 0, 0);
+  const positionVBO = createVBO(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionVBO);
+  gl.enableVertexAttribArray(positionAttr);
+  gl.vertexAttribPointer(positionAttr, 3, gl.FLOAT, false, 0, 0);
+
+  const colorVBO = createVBO(vertexColor);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorVBO);
+  gl.enableVertexAttribArray(colorAttr);
+  gl.vertexAttribPointer(colorAttr, 4, gl.FLOAT, false, 0, 0);
+
+
 
   const m = new matIV();
 
   let mMatrix = m.build();
   let vMatrix = m.build();
   let pMatrix = m.build();
+  let tmpMatrix = m.build();
   let mvpMatrix = m.build();
 
   vMatrix = m.lookAt([0.0, 1.0, 3.0],[0, 0, 0], [0, 1, 0], vMatrix);
@@ -47,6 +64,19 @@ function start() {
   const uniLocation = gl.getUniformLocation(program, 'mvpMatrix');
   gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+
+  m.identity(mMatrix);
+  m.translate(mMatrix, [-1.5, 0.0, 0.0], mMatrix);
+
+// モデル×ビュー×プロジェクション(二つ目のモデル)
+  m.multiply(mvpMatrix, mMatrix, mvpMatrix);
+
+// uniformLocationへ座標変換行列を登録し描画する(二つ目のモデル)
+  gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+
   gl.flush();
 }
 
@@ -84,3 +114,4 @@ function createVBO(array) {
 
   return vbo;
 }
+
