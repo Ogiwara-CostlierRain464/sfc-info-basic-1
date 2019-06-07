@@ -1,6 +1,7 @@
 // ------------------------------------------------------------------------------------------------
-// minMatrix.js
-// version 0.0.3
+// minMatrixb.js
+// version 0.0.2
+// Copyright (c) doxas
 // ------------------------------------------------------------------------------------------------
 
 function matIV(){
@@ -13,9 +14,6 @@ function matIV(){
     dest[8]  = 0; dest[9]  = 0; dest[10] = 1; dest[11] = 0;
     dest[12] = 0; dest[13] = 0; dest[14] = 0; dest[15] = 1;
     return dest;
-  };
-  this.build = function () {
-    return this.identity(this.create());
   };
   this.multiply = function(mat1, mat2, dest){
     var a = mat1[0],  b = mat1[1],  c = mat1[2],  d = mat1[3],
@@ -150,23 +148,24 @@ function matIV(){
     return dest;
   };
   this.perspective = function(fovy, aspect, near, far, dest){
-    var r = 1 / Math.tan(fovy * Math.PI / 360);
-    var d = far - near;
-    dest[0]  = r / aspect;
+    var t = near * Math.tan(fovy * Math.PI / 360);
+    var r = t * aspect;
+    var a = r * 2, b = t * 2, c = far - near;
+    dest[0]  = near * 2 / a;
     dest[1]  = 0;
     dest[2]  = 0;
     dest[3]  = 0;
     dest[4]  = 0;
-    dest[5]  = r;
+    dest[5]  = near * 2 / b;
     dest[6]  = 0;
     dest[7]  = 0;
     dest[8]  = 0;
     dest[9]  = 0;
-    dest[10] = -(far + near) / d;
+    dest[10] = -(far + near) / c;
     dest[11] = -1;
     dest[12] = 0;
     dest[13] = 0;
-    dest[14] = -(far * near * 2) / d;
+    dest[14] = -(far * near * 2) / c;
     dest[15] = 0;
     return dest;
   };
@@ -237,6 +236,7 @@ function matIV(){
 
 function qtnIV(){
   this.create = function(){
+    // x,y,z,w
     return new Float32Array(4);
   };
   this.identity = function(dest){
@@ -270,9 +270,13 @@ function qtnIV(){
   this.multiply = function(qtn1, qtn2, dest){
     var ax = qtn1[0], ay = qtn1[1], az = qtn1[2], aw = qtn1[3];
     var bx = qtn2[0], by = qtn2[1], bz = qtn2[2], bw = qtn2[3];
+    // x
     dest[0] = ax * bw + aw * bx + ay * bz - az * by;
+    // y
     dest[1] = ay * bw + aw * by + az * bx - ax * bz;
+    // z
     dest[2] = az * bw + aw * bz + ax * by - ay * bx;
+    // w
     dest[3] = aw * bw - ax * bx - ay * by - az * bz;
     return dest;
   };
@@ -288,6 +292,9 @@ function qtnIV(){
     dest[3] = Math.cos(angle * 0.5);
     return dest;
   };
+
+  // [vec]を与えられた[qtn]にしたがって回転してくれる
+  // でも、これは分かりにくい！
   this.toVecIII = function(vec, qtn, dest){
     var qp = this.create();
     var qq = this.create();
@@ -358,26 +365,25 @@ function qtnIV(){
 }
 
 function torus(row, column, irad, orad, color){
-  var i, j, tc;
   var pos = new Array(), nor = new Array(),
     col = new Array(), st  = new Array(), idx = new Array();
-  for(i = 0; i <= row; i++){
+  for(var i = 0; i <= row; i++){
     var r = Math.PI * 2 / row * i;
     var rr = Math.cos(r);
     var ry = Math.sin(r);
-    for(j = 0; j <= column; j++){
-      var tr = Math.PI * 2 / column * j;
+    for(var ii = 0; ii <= column; ii++){
+      var tr = Math.PI * 2 / column * ii;
       var tx = (rr * irad + orad) * Math.cos(tr);
       var ty = ry * irad;
       var tz = (rr * irad + orad) * Math.sin(tr);
       var rx = rr * Math.cos(tr);
       var rz = rr * Math.sin(tr);
       if(color){
-        tc = color;
+        var tc = color;
       }else{
-        tc = hsva(360 / column * j, 1, 1, 1);
+        tc = hsva(360 / column * ii, 1, 1, 1);
       }
-      var rs = 1 / column * j;
+      var rs = 1 / column * ii;
       var rt = 1 / row * i + 0.5;
       if(rt > 1.0){rt -= 1.0;}
       rt = 1.0 - rt;
@@ -388,8 +394,8 @@ function torus(row, column, irad, orad, color){
     }
   }
   for(i = 0; i < row; i++){
-    for(j = 0; j < column; j++){
-      r = (column + 1) * i + j;
+    for(ii = 0; ii < column; ii++){
+      r = (column + 1) * i + ii;
       idx.push(r, r + column + 1, r + 1);
       idx.push(r + column + 1, r + column + 2, r + 1);
     }
@@ -398,35 +404,34 @@ function torus(row, column, irad, orad, color){
 }
 
 function sphere(row, column, rad, color){
-  var i, j, tc;
   var pos = new Array(), nor = new Array(),
     col = new Array(), st  = new Array(), idx = new Array();
-  for(i = 0; i <= row; i++){
+  for(var i = 0; i <= row; i++){
     var r = Math.PI / row * i;
     var ry = Math.cos(r);
     var rr = Math.sin(r);
-    for(j = 0; j <= column; j++){
-      var tr = Math.PI * 2 / column * j;
+    for(var ii = 0; ii <= column; ii++){
+      var tr = Math.PI * 2 / column * ii;
       var tx = rr * rad * Math.cos(tr);
       var ty = ry * rad;
       var tz = rr * rad * Math.sin(tr);
       var rx = rr * Math.cos(tr);
       var rz = rr * Math.sin(tr);
       if(color){
-        tc = color;
+        var tc = color;
       }else{
         tc = hsva(360 / row * i, 1, 1, 1);
       }
       pos.push(tx, ty, tz);
       nor.push(rx, ry, rz);
       col.push(tc[0], tc[1], tc[2], tc[3]);
-      st.push(1 - 1 / column * j, 1 / row * i);
+      st.push(1 - 1 / column * ii, 1 / row * i);
     }
   }
   r = 0;
   for(i = 0; i < row; i++){
-    for(j = 0; j < column; j++){
-      r = (column + 1) * i + j;
+    for(ii = 0; ii < column; ii++){
+      r = (column + 1) * i + ii;
       idx.push(r, r + 1, r + column + 2);
       idx.push(r, r + column + 2, r + column + 1);
     }
@@ -435,7 +440,7 @@ function sphere(row, column, rad, color){
 }
 
 function cube(side, color){
-  var tc, hs = side * 0.5;
+  var hs = side * 0.5;
   var pos = [
     -hs, -hs,  hs,  hs, -hs,  hs,  hs,  hs,  hs, -hs,  hs,  hs,
     -hs, -hs, -hs, -hs,  hs, -hs,  hs,  hs, -hs,  hs, -hs, -hs,
@@ -455,7 +460,7 @@ function cube(side, color){
   var col = new Array();
   for(var i = 0; i < pos.length / 3; i++){
     if(color){
-      tc = color;
+      var tc = color;
     }else{
       tc = hsva(360 / pos.length / 3 * i, 1, 1, 1);
     }
@@ -499,3 +504,4 @@ function hsva(h, s, v, a){
   }
   return color;
 }
+

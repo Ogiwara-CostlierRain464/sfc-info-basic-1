@@ -75,6 +75,7 @@ function start() {
     // カウンタを元にラジアンを算出
     const rad = (count % 360) * Math.PI / 180;
 
+
     // モデル座標変換行列の生成(Y軸による回転)
     m.identity(mMatrix);
     m.rotate(mMatrix, rad, [0, 1, 0], mMatrix);
